@@ -1,0 +1,87 @@
+<% layout("layouts/boilerplate") %>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5 mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <h3>Availability</h3>
+      <a href="/listings/<%= listing._id %>" class="btn btn-sm btn-outline-secondary">Back to listing</a>
+    </div>
+    <p class="text-muted">Block out dates when this listing is not available for booking. Confirmed bookings are already blocked automatically. Check-in is from 12:00 PM and check-out is by 10:00 AM, so a room booked &ldquo;8 Sep &ndash; 9 Sep&rdquo; frees up again for a 12:00 PM check-in on 9 Sep.</p>
+
+    <div class="card border mb-4">
+      <div class="card-body">
+        <h6 class="card-title"><b>Rooms & booked ranges</b></h6>
+        <% for (const room of roomsAvailability){ %>
+          <div class="mb-2">
+            <b><%= room.name %></b>
+            <span class="text-muted small">&nbsp;&#8377; <%= (room.price || 0).toLocaleString("en-IN") %>/night &middot; up to <%= room.maxGuests %> guests</span>
+            <% if(room.disabled && room.disabled.length > 0){ %>
+              <div class="small text-danger">
+                <i class="fa-regular fa-calendar-xmark me-1"></i>Not available:
+                <% for (const iv of room.disabled){ %>
+                  <%= new Date(iv.from).toLocaleDateString("en-IN",{day:"numeric",month:"short"}) %>&ndash;<%= new Date(iv.to).toLocaleDateString("en-IN",{day:"numeric",month:"short"}) %>
+                <% } %>
+              </div>
+            <% } else { %>
+              <div class="small text-success"><i class="fa-regular fa-calendar-check me-1"></i>No upcoming bookings</div>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="card border mb-4">
+      <div class="card-body">
+        <h6 class="card-title"><b>Block a date range</b></h6>
+        <form method="POST" action="/listings/<%= listing._id %>/availability">
+          <div class="mb-2">
+            <input type="date" id="dateRange" class="form-control" placeholder="Select dates">
+          </div>
+          <input type="hidden" name="start" id="start">
+          <input type="hidden" name="end" id="end">
+          <button class="btn btn-dark w-100">Block selected dates</button>
+        </form>
+        <small class="text-muted">Select one or more dates below, then click block.</small>
+      </div>
+    </div>
+
+    <% if(blocked.length > 0){ %>
+      <h6><b>Blocked dates</b></h6>
+      <ul class="list-group">
+        <% for (const d of blocked){
+            const bdt = new Date(d);
+            const bdStr = bdt.getFullYear() + "-" + String(bdt.getMonth()+1).padStart(2,"0") + "-" + String(bdt.getDate()).padStart(2,"0");
+        %>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span><i class="fa-regular fa-calendar-xmark me-2"></i><%= bdt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) %></span>
+            <form method="POST" action="/listings/<%= listing._id %>/availability/<%= bdStr %>?_method=DELETE">
+              <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Unblock this date?');">Unblock</button>
+            </form>
+          </li>
+        <% } %>
+      </ul>
+    <% } else { %>
+      <p class="text-muted">No dates blocked. Your listing is available every day it isn't booked.</p>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    flatpickr("#dateRange", {
+      mode: "range",
+      minDate: "today",
+      dateFormat: "Y-m-d",
+      onChange: function (selectedDates) {
+        if (selectedDates.length === 1) {
+          document.getElementById("start").value = flatpickr.formatDate(selectedDates[0], "Y-m-d");
+          document.getElementById("end").value = flatpickr.formatDate(selectedDates[0], "Y-m-d");
+        } else if (selectedDates.length === 2) {
+          document.getElementById("start").value = flatpickr.formatDate(selectedDates[0], "Y-m-d");
+          document.getElementById("end").value = flatpickr.formatDate(selectedDates[1], "Y-m-d");
+        }
+      }
+    });
+  });
+</script>

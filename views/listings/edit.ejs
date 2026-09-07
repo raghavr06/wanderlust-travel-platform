@@ -1,52 +1,122 @@
 <% layout("layouts/boilerplate") %>
-<div class="row">
-    <div class="col-8 offset-2">
-        <br><br>
+<div class="row justify-content-center">
+    <div class="col-md-8 mt-4">
         <h2>Edit Listing</h2>
-
-    <form method="POST" action="/listings/<%= listing._id%>?_method=PATCH" novalidate class="needs-validation" enctype="multipart/form-data">
-        <div class="mb-3">
-            <label for="title" class="form-label">Title</label>
-            <input type="text" name="listing[title]" value="<%= listing.title %>" class="form-control" required>
-            <div class="invalid-feedback">Enter title</div>
-        </div>
-
-         <div class="mb-3">
-           <label for="description" class="form-label">Description</label>
-           <textarea name="listing[description]" class="form-control" required><%= listing.description %></textarea>
-           <div class="invalid-feedback">Enter description</div>
-        </div>
-
-        <div class="mb-3">
-            <label for="image" class="form-label">Upload New Image</label>
-              <input type="file" name="image" class="form-control" >
-              
-        </div>
-
-        <div class="row">
-            <div class="mb-3 col-md-4">
-                <label for="price" class="form-label">Price</label>
-                <input type="number" name="listing[price]" class="form-control" value="<%= listing.price %>" required>  
-                <div class="invalid-feedback">Enter price</div>
+        <form method="POST" action="/listings/<%= listing._id %>?_method=PATCH" novalidate class="needs-validation" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" name="listing[title]" id="title" value="<%= listing.title %>" class="form-control" required>
+                <div class="invalid-feedback">Enter title</div>
             </div>
 
-            <div class="mb-3 col-md-5">
-                <label for="country" class="form-label">Country</label>
-                <input type="text" name="listing[country]" class="form-control"  value="<%= listing.country %>" class="form-control" required>
-                <div class="invalid-feedback">Enter country</div>
+            <div class="row">
+                <div class="mb-3 col-md-4">
+                    <label for="category" class="form-label">Category</label>
+                    <select name="listing[category]" id="category" class="form-select" required>
+                        <% for (const cat of categoryMeta){ %>
+                            <option value="<%= cat.name %>" <%= listing.category === cat.name ? 'selected' : '' %>><%= cat.name %></option>
+                        <% } %>
+                    </select>
+                    <div class="invalid-feedback">Choose a category</div>
+                </div>
+
+                <div class="mb-3 col-md-4">
+                    <label for="price" class="form-label">Price per night (&#8377;)</label>
+                    <input type="number" name="listing[price]" id="price" value="<%= listing.price %>" class="form-control" required>
+                    <div class="invalid-feedback">Price should be valid</div>
+                </div>
+
+                <div class="mb-3 col-md-4">
+                    <label for="maxGuests" class="form-label">Max Guests</label>
+                    <input type="number" name="listing[maxGuests]" id="maxGuests" value="<%= listing.maxGuests || 1 %>" class="form-control" min="1" required>
+                    <div class="invalid-feedback">Enter a valid number of guests</div>
+                </div>
             </div>
 
-        </div>
-        
-        <div class="mb-3">
-            <label for="location" class="form-label">Location</label>
-             <input type="text" name="listing[location]" class="form-control"  value="<%= listing.location %>"class="form-control" required>
-             <div class="invalid-feedback">Enter location</div>  
-        </div> 
-        <button class="btn btn-dark edit-btn mb-3">Edit</button>
-    </form>
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea name="listing[description]" id="description" class="form-control" rows="3" required><%= listing.description %></textarea>
+                <div class="invalid-feedback">Enter description</div>
+            </div>
 
+            <div class="row">
+                <div class="mb-3 col-md-6">
+                    <label for="location" class="form-label">Location</label>
+                    <input type="text" name="listing[location]" id="location" value="<%= listing.location %>" class="form-control" required>
+                    <div class="invalid-feedback">Enter location</div>
+                </div>
+                <div class="mb-3 col-md-6">
+                    <label for="country" class="form-label">Country</label>
+                    <input type="text" name="listing[country]" id="country" value="<%= listing.country %>" class="form-control" required>
+                    <div class="invalid-feedback">Country should be valid</div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="image" class="form-label">Upload New Image</label>
+                <input type="file" name="image" id="image" class="form-control">
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Amenities</label>
+                <div class="d-flex flex-wrap gap-3">
+                    <% for (const am of listingAmenities){ %>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="listing[amenities]" value="<%= am %>" id="am-<%= am.replace(/\s+/g,'-').toLowerCase() %>" <%= listing.amenities && listing.amenities.includes(am) ? 'checked' : '' %>>
+                            <label class="form-check-label" for="am-<%= am.replace(/\s+/g,'-').toLowerCase() %>"><%= am %></label>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Rooms <small class="text-muted">(add 1 or more)</small></label>
+                <div id="rooms-container">
+                    <% const existingRooms = (listing.rooms && listing.rooms.length) ? listing.rooms : [{ name: "Standard Room", maxGuests: listing.maxGuests, price: listing.price }]; %>
+                    <% for (let ri = 0; ri < existingRooms.length; ri++){ %>
+                        <div class="room-row row g-2 mb-2 align-items-center">
+                            <div class="col-md-5">
+                                <input type="text" name="listing[rooms][<%= ri %>][name]" value="<%= existingRooms[ri].name %>" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" name="listing[rooms][<%= ri %>][maxGuests]" value="<%= existingRooms[ri].maxGuests %>" min="1" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" name="listing[rooms][<%= ri %>][price]" value="<%= existingRooms[ri].price != null ? existingRooms[ri].price : '' %>" min="0" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-room">Remove</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-dark" id="add-room-btn"><i class="fa-solid fa-plus me-1"></i>Add room</button>
+                <small class="text-muted d-block mt-2">Leave empty to keep a default "Standard Room".</small>
+            </div>
+
+            <div class="mb-4">
+                <a href="/listings/<%= listing._id %>/availability" class="btn btn-outline-dark">Manage blocked dates</a>
+                <a href="/listings/<%= listing._id %>" class="btn btn-outline-secondary">View listing</a>
+            </div>
+
+            <button class="btn btn-dark edit-btn mb-3">Edit</button>
+        </form>
     </div>
 </div>
-    
-    
+
+<template id="room-row-template">
+    <div class="room-row row g-2 mb-2 align-items-center">
+        <div class="col-md-5">
+            <input type="text" name="listing[rooms][IDX][name]" placeholder="Room name (e.g. Deluxe Suite)" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="listing[rooms][IDX][maxGuests]" placeholder="Guests" min="1" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-3">
+            <input type="number" name="listing[rooms][IDX][price]" placeholder="Price / night" min="0" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-room">Remove</button>
+        </div>
+    </div>
+</template>

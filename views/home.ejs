@@ -1,0 +1,42 @@
+<% layout("layouts/boilerplate") %>
+
+<div class="hero text-center text-white d-flex align-items-center justify-content-center">
+  <div>
+    <small class="hero-eyebrow text-uppercase fw-bold">Wanderlust</small>
+    <h1 class="hero-title">Book unique stays around the world</h1>
+    <p class="hero-subtitle">Homestays, cabins, castles and more — all in one place.</p>
+    <form class="row g-2 justify-content-center mt-4" method="GET" action="/listings">
+      <div class="col-md-5">
+        <input type="text" name="q" class="form-control form-control-lg" placeholder="Where do you want to go?">
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-danger btn-lg search-btn"><i class="fa-solid fa-magnifying-glass me-2"></i>Search</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="container mt-4">
+  <h5 class="mb-3"><b>Browse by category</b></h5>
+  <div id="filters" class="mb-4">
+    <% for (const cat of categoryMeta){ %>
+      <div class="filter">
+        <a href="/listings?category=<%= cat.name %>" class="text-decoration-none text-reset">
+          <div class="cat-emoji"><i class="<%= cat.icon %>"></i></div>
+          <p><%= cat.name %></p>
+        </a>
+      </div>
+    <% } %>
+  </div>
+
+  <h5 class="mb-3"><b>Featured stays</b></h5>
+  <div class="row row-cols-lg-4 row-cols-md-2 row-cols-sm-1">
+    <% if(featured && featured.length > 0){ %>
+      <% for (const listing of featured){ %>
+        <%- include("./includes/listingCard.ejs", { listing }) %>
+      <% } %>
+    <% } else { %>
+      <div class="alert alert-info col-12">No listings yet. <a href="/listings/new">Become a host</a> and add the first one!</div>
+    <% } %>
+  </div>
+</div>

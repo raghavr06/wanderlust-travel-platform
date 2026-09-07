@@ -1,0 +1,25 @@
+<a href="/listings/<%= listing._id %>" class="listing-link">
+  <div class="card listing-card">
+    <img src="<%= listing.image ? listing.image.url : '/img/placeholder.svg' %>" class="card-img-top" alt="<%= listing.title %>" style="height: 20rem;">
+    <div class="card-img-overlay"></div>
+    <div class="card-body">
+
+      <div class="d-flex justify-content-between align-items-start">
+        <p class="card-text mb-1">
+          <b><%= listing.title %></b><br>
+          <span class="text-muted small"><i class="fa-solid fa-location-dot me-1"></i><%= listing.location %></span>
+        </p>
+        <% if(listing.rating > 0){ %>
+          <span class="badge bg-dark rounded-pill small"><i class="fa-solid fa-star text-warning me-1"></i><%= listing.rating %><span class="text-muted ms-1">(<%= listing.numReviews %>)</span></span>
+        <% } %>
+      </div>
+
+      <p class="card-text mb-0">
+        <b>&#8377; <%= listing.price.toLocaleString("en-IN")%></b> /night
+      </p>
+      <% if(listing.category){ %>
+        <span class="badge bg-light text-dark border mt-1"><%= listing.category %></span>
+      <% } %>
+    </div>
+  </div>
+</a>

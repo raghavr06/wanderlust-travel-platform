@@ -1,0 +1,93 @@
+<% layout("layouts/boilerplate") %>
+
+<div class="d-flex justify-content-between align-items-center mt-4">
+  <h3>Host Dashboard</h3>
+  <a href="/listings/new" class="btn btn-danger">Add Listing</a>
+</div>
+<p class="text-muted">Manage your listings and track confirmed bookings. Bookings are confirmed instantly when a guest books an available room.</p>
+
+<div class="row g-3 my-2">
+  <div class="col-6 col-lg-3">
+    <div class="card border text-center p-3">
+      <h2><%= stats.total %></h2>
+      <span class="text-muted small">Total bookings</span>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card border text-center p-3">
+      <h2><%= stats.confirmed %></h2>
+      <span class="text-muted small">Confirmed</span>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card border text-center p-3">
+      <h2><%= stats.cancelled %></h2>
+      <span class="text-muted small">Cancelled</span>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card border text-center p-3">
+      <h2>&#8377; <%= stats.revenue.toLocaleString("en-IN") %></h2>
+      <span class="text-muted small">Revenue</span>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm my-4">
+  <div class="card-header bg-white"><b>Bookings</b> <span class="text-muted fs-6">(confirmed instantly, no approval needed)</span></div>
+  <div class="card-body p-0">
+    <% if(requests.length === 0){ %>
+      <p class="text-muted p-3 mb-0">No bookings yet. Share your listing link to get started.</p>
+    <% } else { %>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Guest</th>
+            <th>Listing</th>
+            <th>Room</th>
+            <th>Dates</th>
+            <th>Guests</th>
+            <th>Total</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const r of requests){ %>
+            <tr>
+              <td><%= r.guest ? (r.guest.username || r.guest.name || 'Guest') : 'Guest' %></td>
+              <td>
+                <% if(r.listingId){ %>
+                  <a href="/listings/<%= r.listingId._id %>"><%= r.listingId.title %></a>
+                <% } else { %>Deleted<% } %>
+              </td>
+              <td><%= r.roomName || 'Standard' %></td>
+              <td>
+                <%= new Date(r.checkIn).toLocaleDateString("en-IN", {day:"numeric", month:"short"}) %>
+                &rarr;
+                <%= new Date(r.checkOut).toLocaleDateString("en-IN", {day:"numeric", month:"short"}) %>
+              </td>
+              <td><%= r.guests %></td>
+              <td>&#8377; <%= r.totalPrice.toLocaleString("en-IN") %></td>
+              <td>
+                <span class="badge bg-<%= r.status === 'CONFIRMED' ? 'success' : 'danger' %>"><%= r.status %></span>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<h5 class="mb-3"><b>My listings</b> <span class="text-muted fs-6">(<%= myListings.length %>)</span></h5>
+<% if(myListings.length === 0){ %>
+  <div class="alert alert-info">You haven't added any listings yet. <a href="/listings/new">Add your first listing</a>.</div>
+<% } else { %>
+<div class="row row-cols-lg-3 row-cols-md-2 row-cols-sm-1">
+  <% for (const listing of myListings){ %>
+    <%- include("../includes/listingCard.ejs", { listing }) %>
+  <% } %>
+</div>
+<% } %>

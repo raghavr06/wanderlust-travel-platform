@@ -18,11 +18,23 @@
     padding: 0.5rem 3rem 0.5rem 3rem;
     font-size: 0.9rem;
   }
+  .nav-bell{
+    position: relative;
+    color: #222222;
+    font-size: 1.25rem;
+    margin-right: 1rem;
+  }
+  .nav-bell .badge{
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    font-size: 0.65rem;
+  }
 </style>
 
 <nav class="navbar navbar-expand-md bg-body-light border-bottom sticky-top">
   <div class="container-fluid">
-    <a class="navbar-brand" href="/listings"><i class="fa-solid fa-compass"></i></a>
+    <a class="navbar-brand" href="/"><i class="fa-solid fa-compass"></i> <b>Wanderlust</b></a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -33,24 +45,28 @@
       </div>
 
       <div class="navbar-nav ms-auto">
-        <form class="d-flex" role="search">
-        <input class="form-control me-2 col-5 search-inp" type="search" placeholder="Search destinations">
-        <button class="btn search-btn" type="submit" > <i class="fa-solid fa-magnifying-glass"></i>Search</button>
+        <form class="d-flex" role="search" method="GET" action="/listings">
+        <input class="form-control me-2 col-5 search-inp" name="q" type="search" placeholder="Search destinations">
+        <button class="btn search-btn" type="submit" > <i class="fa-solid fa-magnifying-glass"></i></button>
     </form>
       </div>
 
-      <div class="navbar-nav ms-auto">
-        <a class="nav-link" href="/listings/new">Add Listing</a>
-        <% if(!currUser){ %>
-          <a class="nav-link" aria-current="page" href="/signup"> <b>SignUp</b></a>
-          <a class="nav-link" href="/login"> <b>Login</b></a>
-       <% } %> 
-
-       <% if(currUser){ %>
+      <div class="navbar-nav ms-auto align-items-center">
+        <% if(currUser){ %>
+          <a class="nav-bell" href="/notifications" title="Notifications">
+            <i class="fa-regular fa-bell"></i>
+            <% if(unreadCount && unreadCount > 0){ %>
+              <span class="badge bg-danger rounded-pill"><%= unreadCount %></span>
+            <% } %>
+          </a>
+          <a class="nav-link" href="/listings/new">Add Listing</a>
+          <a class="nav-link" href="/dashboard"><b>Dashboard</b></a>
+          <a class="nav-link" href="/profile">My Bookings</a>
           <a class="nav-link" href="/logout">Logout</a>
-       <%} %>
-        
-        
+       <% } else { %>
+         <a class="nav-link" aria-current="page" href="/signup"> <b>SignUp</b></a>
+         <a class="nav-link" href="/login"> <b>Login</b></a>
+       <% } %>
       </div>
     </div>
   </div>

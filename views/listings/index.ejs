@@ -1,4 +1,4 @@
-<% layout("/layouts/boilerplate") %>
+<% layout("layouts/boilerplate") %>
 
 <style>
     #filters{
@@ -7,92 +7,62 @@
     }
     .filter{
         text-align: center;
-        margin-right: 2rem;
-        margin-top: 2rem;
-        opacity: 0.7;
-    }
-    .filter:hover{
-        opacity: 1;
+        margin-right: 1.5rem;
+        margin-top: 0.5rem;
+        opacity: 0.55;
         cursor: pointer;
     }
-    .filter p{
-        font-size: 0.8rem;
-    }
+    .filter.active{ opacity: 1; }
+    .filter:hover{ opacity: 1; }
+    .filter p{ font-size: 0.8rem; margin-top: 0.25rem; margin-bottom: 0; }
+    .cat-emoji{ font-size: 1.25rem; }
 </style>
 
+<div class="mt-3">
     <div id="filters">
-
-        <div class="filter">
-           <div><i class="fa-solid fa-bed"></i></div> 
-            <p>Rooms</p>
-        </div>
-
-        <div class="filter">
-           <div><i class="fa-solid fa-mountain-city"></i></div> 
-            <p>Iconic Cities</p>
-        </div>
-
-        <div class="filter">
-           <div><i class="fa-solid fa-mountain"></i></div> 
-            <p>Mountains</p>
-        </div>
-
-        <div class="filter">
-           <div><i class="fa-brands fa-fort-awesome"></i></div> 
-            <p>Castles</p>
-        </div>
-
-        <div class="filter">
-           <div><i class="fa-solid fa-person-swimming"></i></div> 
-            <p>Amazing Pools</p>
-        </div>
-
-        <div class="filter">
-           <div><i class="fa-solid fa-campground"></i></div> 
-            <p>Camping</p>
-        </div>
-
-        <div class="filter">
-           <div><i class="fa-solid fa-cow"></i></div> 
-            <p>Farms</p>
-        </div>
-
-        <div class="filter">
-           <div><i class="fa-solid fa-snowflake"></i></div> 
-            <p>Arctic</p>
-        </div>
-
-         <div class="filter">
-           <div><i class="fa-solid fa-landmark-dome"></i></div> 
-            <p>Domes</p>
-        </div>
-
-         <div class="filter">
-           <div><i class="fa-solid fa-sailboat"></i></div> 
-            <p>Boats</p>
-        </div>
-
-       
-    </div>
-
-    <div class="row row-cols-lg-3 row-cols-md-2 row-cols-sm-1 mt-3">
-        <% for (listing of allListings){ %>
-            <a href="/listings/<%= listing._id %>" class="listing-link">
-                <div class="card listing-card" >
-                <img src="<%= listing.image.url %>" class="card-img-top" alt="listings" style="height: 20rem;">
-                <div class="card-img-overlay"></div>
-                <div class="card-body">
-        
-                    <p class="card-text">
-            <b><%= listing.title %></b> <br>
-            &#8377; <%= listing.price.toLocaleString("en-IN")%> /night
-        </p>
-    </div>
-    </div>
+        <a href="/listings" class="filter<%= filters.category ? '' : ' active' %> text-decoration-none text-reset">
+            <div class="cat-emoji"><i class="fa-solid fa-house"></i></div>
+            <p>All</p>
+        </a>
+        <% for (const cat of categoryMeta){ %>
+            <a href="/listings?category=<%= cat.name %><%= filters.q ? '&q='+filters.q : '' %>" class="filter<%= filters.category === cat.name ? ' active' : '' %> text-decoration-none text-reset">
+                <div class="cat-emoji"><i class="<%= cat.icon %>"></i></div>
+                <p><%= cat.name %></p>
             </a>
-        
-    <% } %>
+        <% } %>
     </div>
-    
-    
 
+    <div class="d-flex justify-content-between align-items-center my-3">
+        <div>
+            <h5><b>
+                <%= filters.category || "All stays" %>
+                <% if(filters.q){ %> for "<%= filters.q %>"<% } %>
+            </b></h5>
+            <span class="text-muted"><%= allListings.length %> <%= allListings.length === 1 ? "stay" : "stays" %> found</span>
+        </div>
+        <form method="GET" action="/listings" class="d-flex gap-2">
+            <% if(filters.q){ %><input type="hidden" name="q" value="<%= filters.q %>"><% } %>
+            <% if(filters.category){ %><input type="hidden" name="category" value="<%= filters.category %>"><% } %>
+            <select name="sort" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                <option value="">Sort by</option>
+                <option value="price_asc" <%= filters.sort === 'price_asc' ? 'selected' : '' %>>Price: Low to High</option>
+                <option value="price_desc" <%= filters.sort === 'price_desc' ? 'selected' : '' %>>Price: High to Low</option>
+                <option value="rating" <%= filters.sort === 'rating' ? 'selected' : '' %>>Top rated</option>
+            </select>
+        </form>
+    </div>
+
+    <div class="row row-cols-lg-3 row-cols-md-2 row-cols-sm-1">
+        <% if(allListings.length === 0){ %>
+            <div class="alert alert-info col-12">
+                No stays match your search.
+                <% if(filters.q || filters.category){ %>
+                    <a href="/listings" class="alert-link">Clear filters</a>.
+                <% } %>
+            </div>
+        <% } %>
+        <% for (const listing of allListings){ %>
+            <%- include("../includes/listingCard.ejs", { listing }) %>
+        <% } %>
+    </div>
+</div>

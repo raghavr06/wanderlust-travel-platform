@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#e8ecef"/>
+  <g fill="#b6c2cc" text-anchor="middle" font-family="Arial, sans-serif">
+    <path d="M200 420 L320 240 L420 380 L490 300 L600 420 Z" fill="#c8d2da"/>
+    <circle cx="560" cy="180" r="34" fill="#f3c14b"/>
+    <text x="400" y="500" font-size="28" fill="#93a3ae">WanderLust</text>
+  </g>
+</svg>

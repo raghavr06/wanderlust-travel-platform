@@ -88,4 +88,61 @@ body{
    /* .btns{
       display: flex;
    } */
+
+   /* Hero */
+   .hero{
+      min-height: 60vh;
+      background-image: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('/img/hero.svg');
+      background-size: cover;
+      background-position: center;
+   }
+   .hero-title{
+      font-size: 2.75rem;
+      font-weight: 700;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+   }
+   .hero-eyebrow{
+      letter-spacing: 0.35em;
+      opacity: 0.92;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.45);
+   }
+   .hero-subtitle{
+      font-size: 1.15rem;
+      opacity: 0.95;
+   }
+
+   /* Filters */
+   #filters{
+      display: flex;
+      flex-wrap: wrap;
+   }
+   .filter{
+      text-align: center;
+      margin-right: 1.5rem;
+      margin-top: 0.5rem;
+      opacity: 0.55;
+      cursor: pointer;
+   }
+   .filter.active{ opacity: 1; }
+   .filter:hover{ opacity: 1; }
+   .filter p{ font-size: 0.8rem; margin-top: 0.25rem; margin-bottom: 0; }
+   .cat-emoji{ font-size: 1.25rem; }
+
+   /* Cards */
+   .listing-card{
+      border: none !important;
+      margin-bottom: 2rem;
+   }
+
+   /* Booking widget */
+   #booking-widget .flatpickr-input{
+      background: #fff;
+   }
+
+   /* Dashboard stat cards */
+   .table thead th{
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+   }
    

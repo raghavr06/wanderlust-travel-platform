@@ -1,0 +1,58 @@
+<% layout("layouts/boilerplate") %>
+
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3>My Bookings</h3>
+            <a href="/dashboard" class="btn btn-sm btn-outline-dark">Host Dashboard</a>
+        </div>
+        <hr>
+
+        <% if(bookings && bookings.length > 0){ %>
+            <div class="row">
+                <% for (const booking of bookings){ %>
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100 border">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h5 class="card-title">
+                                        <% if(booking.listingId){ %>
+                                            <a href="/listings/<%= booking.listingId._id %>" class="text-decoration-none"><%= booking.listingId.title %></a>
+                                        <% } else { %>
+                                            Listing Deleted
+                                        <% } %>
+                                    </h5>
+                                    <span class="badge bg-<%= booking.status === 'CONFIRMED' ? 'success' : (booking.status === 'PENDING' ? 'warning text-dark' : 'danger') %>"><%= booking.status %></span>
+                                </div>
+                                <p class="card-text mt-2 mb-1">
+                                    <i class="fa-regular fa-calendar me-1"></i><%= new Date(booking.checkIn).toLocaleDateString("en-IN", {day:"numeric", month:"short", year:"numeric"}) %> &rarr; <%= new Date(booking.checkOut).toLocaleDateString("en-IN", {day:"numeric", month:"short", year:"numeric"}) %>
+                                    <small class="d-block text-muted mt-1"><i class="fa-regular fa-clock me-1"></i>Check-in from 12:00 PM &middot; Check-out by 10:00 AM</small>
+                                    <br>
+                                    <i class="fa-solid fa-door-open me-1"></i><%= booking.roomName || 'Standard Room' %>
+                                    <br>
+                                    <i class="fa-solid fa-users me-1"></i><%= booking.guests %> guest(s) &nbsp; <b>&#8377; <%= booking.totalPrice.toLocaleString("en-IN") %></b>
+                                </p>
+
+                                <% if(booking.status === 'CANCELLED'){ %>
+                                    <small class="text-muted">This booking was cancelled.</small>
+                                <% } else if(booking.status === 'CONFIRMED'){ %>
+                                    <% if(new Date(booking.checkIn) > new Date()){ %>
+                                        <form method="POST" action="/profile/bookings/<%= booking._id %>/cancel" class="mt-2" onsubmit="return confirm('Cancel this booking?');">
+                                            <button class="btn btn-sm btn-outline-danger w-100">Cancel booking</button>
+                                        </form>
+                                    <% } else { %>
+                                        <small class="text-muted">This stay has begun and can no longer be cancelled online.</small>
+                                    <% } %>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        <% } else { %>
+            <div class="alert alert-info">
+                You have no bookings yet! Explore some <a href="/listings" class="alert-link">destinations</a>.
+            </div>
+        <% } %>
+    </div>
+</div>

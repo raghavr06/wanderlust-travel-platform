@@ -1,86 +1,202 @@
-    <% layout("layouts/boilerplate") %>
-    <div class="row mt-3">
-        <div class="col-8 offset-3">
-            <h3> <%= listing.title %></h3>
+<% layout("layouts/boilerplate") %>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="/css/rating.css">
+
+<script type="application/json" id="booking-availability"><%- JSON.stringify(availability) %></script>
+<% const availRoomsMap = (availability.rooms || []).reduce((m, r) => { m[String(r._id)] = r; return m; }, {}); %>
+
+<div class="row mt-3">
+  <div class="col-lg-8">
+    <div class="card show-card listing-card">
+      <img src="<%= listing.image ? listing.image.url : '/img/placeholder.svg' %>" class="card-img-top show-btn" alt="<%= listing.title %>">
+      <div class="card-body p-3">
+        <div class="d-flex justify-content-between align-items-start">
+          <h3 class="mb-0"><%= listing.title %></h3>
+          <% if(listing.rating > 0){ %>
+            <span class="badge bg-dark rounded-pill mt-1"><i class="fa-solid fa-star text-warning me-1"></i><%= listing.rating %> (<%= listing.numReviews %>)</span>
+          <% } %>
         </div>
+        <p class="text-muted mb-2">
+          <i class="fa-solid fa-location-dot me-1"></i><%= listing.location %>, <%= listing.country %>
+        </p>
+        <% if(listing.category){ %><span class="badge bg-light text-dark border"><%= listing.category %></span><% } %>
 
-    <div class="card col-6 offset-3 show-card listing-card">
-        <img src="<%= listing.image.url %>" class="card-img-top show-btn" alt="listing">
-    <div class="card-body">
-        <p class="card-text"> <br> <i>Owned by <%=listing.owner.username %></i> </p>
-        <p class="card-text">  <%= listing.description %>  </p>
-        <p class="card-text">  &#8377; <%= listing.price.toLocaleString("en-IN") %>   <!--toLocaleString converts number to string and displays price in indian rupee format-->  </p>
-        <p class="card-text">  <%= listing.location %>  </p>
-        <p class="card-text">  <%= listing.country %>  </p>
-        
-    </div>
-    </div>
-    <div class="btns">
-        <% if(currUser && listing.owner && currUser._id.equals(listing.owner._id)){ %>
-        <a href="/listings/<%= listing._id %>/edit" class="btn btn-dark edit-btn offset-3 ">Edit</a> <br><br>
-        <form method="post" action="/listings/<%= listing._id %>?_method=DELETE">
-            <button class="btn btn-dark offset-3 mb-3">Delete</button>
-        </form>
-    <%  }%>
-    </div>
-
-    <div class="col-8 offset-3 mb-3">
         <hr>
-        <% if(currUser){ %>
-        
-        <h4>Leave a Review</h4>
-        <form action="/listings/<%= listing.id %>/reviews" method="POST" novalidate class="needs-validation">
+        <p><%= listing.description %></p>
 
-        <div class="mb-3 mt-3">
-            <label for="rating" class="form-label">Rating</label>
-        <fieldset class="starability-slot">
-            
-            <input type="radio" id="no-rate" class="input-no-rate" name="review[rating]" value="1" checked aria-label="No rating." />
-            <input type="radio" id="first-rate1" name="review[rating]" value="1" />
-            <label for="first-rate1" title="Terrible">1 star</label>
-            <input type="radio" id="first-rate2" name="review[rating]" value="2" />
-            <label for="first-rate2" title="Not good">2 stars</label>
-            <input type="radio" id="first-rate3" name="review[rating]" value="3" />
-            <label for="first-rate3" title="Average">3 stars</label>
-            <input type="radio" id="first-rate4" name="review[rating]" value="4" />
-            <label for="first-rate4" title="Very good">4 stars</label>
-            <input type="radio" id="first-rate5" name="review[rating]" value="5" />
-            <label for="first-rate5" title="Amazing">5 stars</label>
-        </fieldset>
-    </div>
-
-        <div class="mb-3 mt-3">
-            <label for="comment" class="form-label">Comments</label>
-            <textarea placeholder="write a comment" name="review[comment]" id="comment" rows="8" cols="30" class="form-control" required></textarea>
-            <div class="invalid-feedback">Enter some comments to submit review</div>
+        <% const lstRoomCount = (listing.rooms && listing.rooms.length) ? listing.rooms.length : 1; %>
+        <div class="row mt-3">
+          <div class="col-6"><i class="fa-solid fa-users me-1"></i>Up to <b><%= listing.maxGuests %></b> guests across <b><%= lstRoomCount %> <%= lstRoomCount === 1 ? "room" : "rooms" %></b></div>
+          <div class="col-6"><i class="fa-solid fa-tag me-1"></i>from <b>&#8377; <%= listing.price.toLocaleString("en-IN") %></b> / night</div>
         </div>
+        <div class="small text-muted mt-1"><i class="fa-regular fa-clock me-1"></i>Check-in from <b>12:00 PM</b> &middot; Check-out by <b>10:00 AM</b></div>
 
-        <button class="btn btn-outline-dark">Submit</button>
-        </form>
-        <hr>
-        <% } %>
-        
-
-        <p> <b>All Reviews</b></p>
-        <div class="row">
-            <% for(review of listing.reviews){ %>
-                <div class="card col-5 ms-3 mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title"><%= review.author.username %></h5>
-                        <p class="starability-result" data-rating="<%= review.rating %>"></p>
-                        <p class="card-text"> <%= review.comment %></p>
-                        
-
-                        <form method="POST" action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE">
-                            <button class="btn btn-sm btn-dark mb-3">Delete</button>
-                        </form> 
-                    </div>
-
+        <% const roomOpts = (listing.rooms && listing.rooms.length) ? listing.rooms : [{ name: "Standard Room", maxGuests: listing.maxGuests, price: listing.price }]; %>
+        <% if(roomOpts.length > 0){ %>
+          <hr>
+          <h6><b>Rooms & availability</b> <span class="text-muted fs-6">(<%= roomOpts.length %>)</span></h6>
+          <ul class="list-group mb-3">
+            <% for (const room of roomOpts){ %>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <b><%= room.name %></b>
+                  <div class="small text-muted">
+                    <i class="fa-solid fa-users me-1"></i><%= room.maxGuests %> guests &nbsp;
+                    <i class="fa-solid fa-tag me-1"></i>&#8377; <%= (room.price != null && room.price > 0 ? room.price : listing.price).toLocaleString("en-IN") %>/night
+                  </div>
+                  <% const bookedIntervals = (availRoomsMap[String(room._id)] || {}).disabled || []; %>
+                  <% if(bookedIntervals.length > 0){ %>
+                    <div class="small text-danger mt-1"><i class="fa-regular fa-calendar-xmark me-1"></i>Not available: <% for (const iv of bookedIntervals){ %><%= new Date(iv.from).toLocaleDateString("en-IN",{day:"numeric",month:"short"}) %>&ndash;<%= new Date(iv.to).toLocaleDateString("en-IN",{day:"numeric",month:"short"}) %> <% } %></div>
+                  <% } else { %>
+                    <div class="small text-success mt-1"><i class="fa-regular fa-calendar-check me-1"></i>Available for all upcoming dates</div>
+                  <% } %>
                 </div>
-                
+                <span class="badge bg-light border text-dark"><%= room.maxGuests %> guests</span>
+              </li>
             <% } %>
+          </ul>
+        <% } %>
+
+        <% if(listing.amenities && listing.amenities.length > 0){ %>
+          <hr>
+          <h6><b>What this place offers</b></h6>
+          <div class="d-flex flex-wrap gap-2">
+            <% for (const a of listing.amenities){ %>
+              <span class="badge bg-light border text-dark"><i class="fa-solid fa-check me-1"></i><%= a %></span>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div id="booking-widget" class="border rounded p-4 sticky-top"
+         data-price="<%= listing.price %>"
+         data-max-guests="<%= listing.maxGuests %>">
+      <h5><b>&#8377; <%= listing.price.toLocaleString("en-IN") %></b> <span class="text-muted"><small>night</small></span></h5>
+
+      <% if(!currUser){ %>
+        <div class="alert alert-secondary mt-3 mb-0">
+          <p class="mb-2"><b>Log in to book this stay</b></p>
+          <a href="/login" class="btn btn-danger w-100">Log in</a>
+          <span class="small d-block mt-2 text-center">New here? <a href="/signup">Create an account</a></span>
+        </div>
+
+      <% } else if(listing.owner && currUser._id.equals(listing.owner._id)){ %>
+        <div class="alert alert-info mt-3 mb-0">
+          <p class="mb-2"><b>You own this listing</b></p>
+          <a href="/listings/<%= listing._id %>/edit" class="btn btn-dark w-100 mb-2">Edit listing</a>
+          <a href="/listings/<%= listing._id %>/availability" class="btn btn-outline-dark w-100 mb-2">Manage availability</a>
+          <form method="POST" action="/listings/<%= listing._id %>?_method=DELETE" onsubmit="return confirm('Delete this listing permanently?');">
+            <button class="btn btn-outline-danger w-100">Delete listing</button>
+          </form>
+        </div>
+
+      <% } else { %>
+        <form method="POST" action="/listings/<%= listing._id %>/bookings" class="needs-validation" novalidate>
+          <div class="mb-3">
+            <label for="roomId" class="form-label">Select room</label>
+            <select id="roomId" name="roomId" class="form-select" required>
+              <% const widgetRooms = roomOpts; %>
+              <% for (const room of widgetRooms){ %>
+                <option value="<%= room._id %>" data-price="<%= (room.price != null && room.price > 0 ? room.price : listing.price) %>" data-max-guests="<%= room.maxGuests %>">
+                  <%= room.name %> &mdash; up to <%= room.maxGuests %> guests &mdash; &#8377; <%= (room.price != null && room.price > 0 ? room.price : listing.price).toLocaleString("en-IN") %>/night
+                </option>
+              <% } %>
+            </select>
+          </div>
+          <% const today = new Date(); const todayStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0") + "-" + String(today.getDate()).padStart(2,"0"); %>
+          <div class="mb-3">
+            <label for="checkIn" class="form-label">Check-in</label>
+            <input type="date" id="checkIn" name="checkIn" class="form-control" min="<%= todayStr %>" required>
+          </div>
+          <div class="mb-3">
+            <label for="checkOut" class="form-label">Check-out</label>
+            <input type="date" id="checkOut" name="checkOut" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="guests" class="form-label">Guests <small id="guests-hint" class="text-muted">(max <%= widgetRooms[0] ? widgetRooms[0].maxGuests : listing.maxGuests %> for <%= widgetRooms[0] ? widgetRooms[0].name : "selected room" %>)</small></label>
+            <input type="number" id="guests" name="guests" class="form-control" value="1" min="1" max="<%= widgetRooms[0] ? widgetRooms[0].maxGuests : listing.maxGuests %>" required>
+          </div>
+
+          <div class="border-top pt-3 mb-3 d-none" id="price-breakdown">
+            <div class="d-flex justify-content-between">
+              <span><span id="rate-label">&#8377; 0</span> × <span id="nights-count">1</span> night(s)</span>
+              <b id="total-price">&#8377; 0</b>
             </div>
+          </div>
+
+          <button type="submit" class="btn btn-danger w-100">Confirm booking</button>
+          <small class="text-muted d-block text-center mt-1"><i class="fa-regular fa-clock me-1"></i>Check-in from 12:00 PM &middot; Check-out by 10:00 AM</small>
+        </form>
+      <% } %>
     </div>
-        
+  </div>
+</div>
+
+<div class="col-lg-8 mt-4">
+  <hr>
+  <div class="row">
+    <div class="col-lg-6 mb-3">
+      <% if(currUser && !(listing.owner && currUser._id.equals(listing.owner._id))){ %>
+        <h5><b>Leave a review</b></h5>
+        <form action="/listings/<%= listing._id %>/reviews" method="POST" novalidate class="needs-validation">
+          <div class="mb-3 mt-3">
+            <label for="rating" class="form-label">Rating</label>
+            <fieldset class="starability-slot">
+              <input type="radio" id="no-rate" class="input-no-rate" name="review[rating]" value="1" checked aria-label="No rating." />
+              <input type="radio" id="first-rate1" name="review[rating]" value="1" />
+              <label for="first-rate1" title="Terrible">1 star</label>
+              <input type="radio" id="first-rate2" name="review[rating]" value="2" />
+              <label for="first-rate2" title="Not good">2 stars</label>
+              <input type="radio" id="first-rate3" name="review[rating]" value="3" />
+              <label for="first-rate3" title="Average">3 stars</label>
+              <input type="radio" id="first-rate4" name="review[rating]" value="4" />
+              <label for="first-rate4" title="Very good">4 stars</label>
+              <input type="radio" id="first-rate5" name="review[rating]" value="5" />
+              <label for="first-rate5" title="Amazing">5 stars</label>
+            </fieldset>
+          </div>
+          <div class="mb-3">
+            <label for="comment" class="form-label">Comments</label>
+            <textarea placeholder="How was your stay?" name="review[comment]" id="comment" rows="4" cols="30" class="form-control" required></textarea>
+            <div class="invalid-feedback">Enter some comments to submit review</div>
+          </div>
+          <button class="btn btn-dark">Submit review</button>
+        </form>
+      <% } else if(currUser) { %>
+        <p class="text-muted">You can't review your own listing.</p>
+      <% } else { %>
+        <p class="text-muted">Log in to leave a review.</p>
+      <% } %>
     </div>
-        
+
+    <div class="col-lg-6">
+      <h5><b>Reviews</b> <% if(listing.numReviews > 0){ %><span class="text-muted fs-6">(<%= listing.numReviews %>)</span><% } %></h5>
+      <% if(listing.reviews && listing.reviews.length > 0){ %>
+        <% for (const review of listing.reviews){ %>
+          <div class="card border-0 mb-3">
+            <div class="card-body p-0">
+              <div class="d-flex justify-content-between">
+                <b><%= review.author ? review.author.username : "Deleted user" %></b>
+                <span class="text-warning"><%= "★".repeat(review.rating) %><span class="text-muted"><%= "☆".repeat(5 - review.rating) %></span></span>
+              </div>
+              <p class="mb-1"><%= review.comment %></p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted"><%= review.createdAt ? new Date(review.createdAt).toLocaleDateString("en-IN", {day:"numeric", month:"short", year:"numeric"}) : "" %></small>
+                <% if(currUser && review.author && currUser._id.equals(review.author._id)){ %>
+                  <form method="POST" action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE">
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        <% } %>
+      <% } else { %>
+        <p class="text-muted">No reviews yet. Be the first to review!</p>
+      <% } %>
+    </div>
+  </div>
+</div>

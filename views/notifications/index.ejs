@@ -1,0 +1,42 @@
+<% layout("layouts/boilerplate") %>
+
+<div class="row mt-4">
+  <div class="col-md-8 offset-md-2">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3>Notifications</h3>
+      <div>
+        <% if(notifications.length > 0){ %>
+          <form method="POST" action="/notifications/read-all" class="d-inline">
+            <button class="btn btn-sm btn-outline-dark">Mark all read</button>
+          </form>
+        <% } %>
+        <a href="/" class="btn btn-sm btn-outline-secondary">Explore stays</a>
+      </div>
+    </div>
+    <hr>
+
+    <% if(notifications.length > 0){ %>
+      <div class="list-group">
+        <% for (const n of notifications){ %>
+          <div class="list-group-item list-group-item-action <%= n.read ? 'list-group-item-light' : '' %> d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto">
+              <div class="fw-bold">
+                <%= n.read ? '' : '<span class="text-danger">●</span> ' %>
+                <%= n.title %>
+              </div>
+              <div class="small text-muted"><%= n.message %></div>
+              <small class="text-muted"><i class="fa-regular fa-clock me-1"></i><%= new Date(n.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) %></small>
+            </div>
+            <% if(!n.read){ %>
+              <form method="POST" action="/notifications/<%= n._id %>/read">
+                <button class="btn btn-sm btn-link text-decoration-none" title="Mark as read"><i class="fa-regular fa-circle-check"></i></button>
+              </form>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    <% } else { %>
+      <div class="alert alert-info">No notifications yet. You'll be notified about your bookings here.</div>
+    <% } %>
+  </div>
+</div>
