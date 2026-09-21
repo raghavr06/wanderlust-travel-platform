@@ -1,148 +1,383 @@
-body{
-  font-family: "Plus Jakarta Sans", sans-serif !important;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+/* ============================================================
+   WanderLust — Global Design System
+   Tokens → Components → Utilities
+   ============================================================ */
+
+/* ── 1. Design Tokens (CSS custom properties) ─────────────── */
+:root {
+  /* Force light mode — prevents OS dark-mode override */
+  color-scheme: light only;
+
+  /* Brand colours */
+  --clr-brand:        #fe424d;
+  --clr-brand-dark:   #d93038;
+  --clr-accent:       #7c3aed;
+  --clr-accent-light: #ede9fe;
+
+  /* Neutrals — explicit light palette */
+  --clr-bg:           #ffffff;
+  --clr-bg-subtle:    #f9fafb;
+  --clr-border:       #e5e7eb;
+  --clr-text:         #111827;
+  --clr-text-muted:   #6b7280;
+  --clr-text-inverse: #ffffff;
+
+  /* Feedback */
+  --clr-success:  #16a34a;
+  --clr-warning:  #d97706;
+  --clr-danger:   #dc2626;
+  --clr-info:     #0284c7;
+
+  /* ── Typography — standard industry rem scale ──────────── */
+  --font-base:  "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+
+  /* Font sizes (1rem = 16px browser default) */
+  --text-xs:    0.75rem;   /* 12px — labels, badges, captions     */
+  --text-sm:    0.875rem;  /* 14px — secondary text, nav links    */
+  --text-base:  1rem;      /* 16px — body copy, inputs, buttons   */
+  --text-lg:    1.125rem;  /* 18px — card titles, section labels  */
+  --text-xl:    1.25rem;   /* 20px — section headings             */
+  --text-2xl:   1.5rem;    /* 24px — page sub-headings            */
+  --text-3xl:   2rem;      /* 32px — hero title                   */
+  --text-4xl:   2.5rem;    /* 40px — large hero (home page)       */
+
+  /* Font weights */
+  --fw-normal:  400;
+  --fw-medium:  500;
+  --fw-semi:    600;
+  --fw-bold:    700;
+  --fw-xbold:   800;
+
+  /* Line heights */
+  --lh-tight:   1.2;
+  --lh-snug:    1.375;
+  --lh-normal:  1.5;
+  --lh-relaxed: 1.625;
+
+  /* Spacing scale (4px base unit) */
+  --sp-1: 0.25rem;   /*  4px */
+  --sp-2: 0.5rem;    /*  8px */
+  --sp-3: 0.75rem;   /* 12px */
+  --sp-4: 1rem;      /* 16px */
+  --sp-5: 1.5rem;    /* 24px */
+  --sp-6: 2rem;      /* 32px */
+  --sp-8: 3rem;      /* 48px */
+
+  /* Border radii */
+  --radius-sm:   0.25rem;   /*  4px */
+  --radius-md:   0.5rem;    /*  8px */
+  --radius-lg:   0.75rem;   /* 12px */
+  --radius-xl:   1rem;      /* 16px */
+  --radius-2xl:  1.5rem;    /* 24px */
+  --radius-pill: 9999px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:  0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.05);
+  --shadow-lg:  0 10px 24px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.06);
+  --shadow-xl:  0 20px 40px rgba(0,0,0,.12);
+
+  /* Transitions */
+  --transition: 0.18s ease;
 }
-   .container{
-      flex:1
-   }
 
- .navbar{
-    height:5rem;
-    background-color: white;
+/* ── 2. Base reset / global ───────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
- }
- .fa-compass{
-    color:#fe242d;
-    font-size: 2rem;
- }
- .nav-link{
-    color:#222222 !important;
- }
+html {
+  /* Enforce light background at root level */
+  background-color: #ffffff;
+  color: #111827;
+}
 
- /* Footer */
- .f-info-links a{
-   text-decoration: none;
-   color:#222222;
- }
- .f-info-links a:hover{
-   text-decoration: underline;
- }
- .f-info-links, .f-info-socials, .f-info-brand{
-   width:100%;
-   display: flex;
-   justify-content: center;
-   align-items: center;
- }
- .f-info-socials i{
-   margin-right: 1rem;
-   font-size: 1.3rem;
- }
- .f-info{
-   text-align: center;
-   background-color: #ebebeb;
-   height: 8rem;
-   display: flex;
-   flex-wrap: wrap;
-   justify-content: center;
-   align-items:space-evenly;
- }
+body {
+  font-family:   var(--font-base);
+  font-size:     var(--text-base);    /* 16px */
+  line-height:   var(--lh-normal);    /* 1.5  */
+  color:         var(--clr-text);
+  background:    var(--clr-bg);
+  display:       flex;
+  flex-direction: column;
+  min-height:    100vh;
+  -webkit-font-smoothing: antialiased;
+  /* Override Bootstrap dark-mode media query */
+  color-scheme: light;
+}
 
- /* Cards */
-   .listing-card{
-      border: none !important;
-      margin-bottom:2rem ;
-   }
-   .card-img-top{
-      border-radius: 2rem !important;
-      width: 100% !important;
-      object-fit: cover !important;
-   }
-   .card-body{
-      padding: 0 !important;
-   }
-   .card-text p{
-      font-weight: 400 !important;
-   }
-   .listing-link{
-      text-decoration: none;
-   }
-   .card-img-overlay{
-      opacity: 0;
-   }
-   .card-img-overlay:hover{
-      opacity:0.2;
-      background-color: white;
-   }
-   .add-btn, .edit-btn{
-      background-color: #fe242d !important;
-      border: none !important;
-   }
+.container { flex: 1; }
 
-   /* Show Page*/
-   .show-btn{
-      height:30vh;
-      
-   }
-   /* .btns{
-      display: flex;
-   } */
+a { color: inherit; }
 
-   /* Hero */
-   .hero{
-      min-height: 60vh;
-      background-image: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('/img/hero.svg');
-      background-size: cover;
-      background-position: center;
-   }
-   .hero-title{
-      font-size: 2.75rem;
-      font-weight: 700;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-   }
-   .hero-eyebrow{
-      letter-spacing: 0.35em;
-      opacity: 0.92;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.45);
-   }
-   .hero-subtitle{
-      font-size: 1.15rem;
-      opacity: 0.95;
-   }
+/* Force Bootstrap to use light theme regardless of system preference */
+[data-bs-theme] { color-scheme: light !important; }
 
-   /* Filters */
-   #filters{
-      display: flex;
-      flex-wrap: wrap;
-   }
-   .filter{
-      text-align: center;
-      margin-right: 1.5rem;
-      margin-top: 0.5rem;
-      opacity: 0.55;
-      cursor: pointer;
-   }
-   .filter.active{ opacity: 1; }
-   .filter:hover{ opacity: 1; }
-   .filter p{ font-size: 0.8rem; margin-top: 0.25rem; margin-bottom: 0; }
-   .cat-emoji{ font-size: 1.25rem; }
 
-   /* Cards */
-   .listing-card{
-      border: none !important;
-      margin-bottom: 2rem;
-   }
+/* ── 3. Navbar ────────────────────────────────────────────── */
+.navbar {
+  height: 5rem;
+  background: var(--clr-bg);
+  border-bottom: 1px solid var(--clr-border);
+}
 
-   /* Booking widget */
-   #booking-widget .flatpickr-input{
-      background: #fff;
-   }
+.navbar-brand {
+  font-weight: var(--fw-bold);
+  font-size:   var(--text-lg);
+  color:       var(--clr-text) !important;
+  letter-spacing: -0.01em;
+}
 
-   /* Dashboard stat cards */
-   .table thead th{
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-   }
-   
+.fa-compass {
+  color:       var(--clr-brand);
+  font-size:   1.75rem;
+}
+
+.nav-link {
+  color:       var(--clr-text) !important;
+  font-weight: var(--fw-medium);
+  font-size:   var(--text-sm);
+  transition:  color var(--transition);
+}
+.nav-link:hover { color: var(--clr-brand) !important; }
+
+/* Search bar */
+.search-inp {
+  border-radius:  var(--radius-pill);
+  padding:        var(--sp-2) var(--sp-5) var(--sp-2) var(--sp-4);
+  font-size:      var(--text-sm);
+  border:         1.5px solid var(--clr-border);
+  background:     var(--clr-bg-subtle);
+  transition:     border-color var(--transition);
+}
+.search-inp:focus {
+  outline:        none;
+  border-color:   var(--clr-brand);
+  background:     var(--clr-bg);
+}
+
+.search-btn {
+  color:            var(--clr-text-inverse) !important;
+  background-color: var(--clr-brand) !important;
+  border-radius:    var(--radius-pill) !important;
+  border:           none !important;
+  padding:          var(--sp-2) var(--sp-4) !important;
+  font-weight:      var(--fw-semi) !important;
+  font-size:        var(--text-sm) !important;
+  transition:       background-color var(--transition), transform var(--transition) !important;
+}
+.search-btn:hover {
+  background-color: var(--clr-brand-dark) !important;
+  transform:        translateY(-1px);
+}
+
+/* Notification bell */
+.nav-bell {
+  position:    relative;
+  color:       var(--clr-text);
+  font-size:   1.2rem;
+  margin-right: var(--sp-3);
+  transition:  color var(--transition);
+}
+.nav-bell:hover { color: var(--clr-brand); }
+.nav-bell .badge {
+  position:   absolute;
+  top:        -6px;
+  right:      -10px;
+  font-size:  var(--text-xs);
+  background: var(--clr-brand);
+}
+
+/* ── 4. Hero ──────────────────────────────────────────────── */
+.hero {
+  min-height:        60vh;
+  background-image:  linear-gradient(rgba(0,0,0,0.48), rgba(0,0,0,0.48)), url('/img/hero.svg');
+  background-size:   cover;
+  background-position: center;
+  display:           flex;
+  align-items:       center;
+  justify-content:   center;
+  text-align:        center;
+  color:             var(--clr-text-inverse);
+}
+
+.hero-eyebrow {
+  font-size:      var(--text-xs);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  font-weight:    var(--fw-bold);
+  opacity:        0.85;
+}
+
+.hero-title {
+  font-size:   var(--text-3xl);
+  font-weight: var(--fw-xbold);
+  line-height: 1.2;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  margin-bottom: var(--sp-2);
+}
+
+.hero-subtitle {
+  font-size: var(--text-lg);
+  opacity:   0.9;
+}
+
+/* ── 5. Category filters ──────────────────────────────────── */
+#filters {
+  display:    flex;
+  flex-wrap:  wrap;
+  gap:        var(--sp-2);
+  padding:    var(--sp-3) 0;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.filter {
+  text-align:  center;
+  opacity:     0.5;
+  cursor:      pointer;
+  padding:     var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-md);
+  transition:  opacity var(--transition), background var(--transition);
+}
+.filter.active,
+.filter:hover { opacity: 1; background: var(--clr-bg-subtle); }
+.filter p     { font-size: var(--text-xs); margin: var(--sp-1) 0 0; font-weight: var(--fw-medium); }
+.cat-emoji    { font-size: 1.3rem; }
+
+/* ── 6. Listing cards ─────────────────────────────────────── */
+.listing-link {
+  text-decoration: none;
+  color:           inherit;
+  display:         block;
+}
+
+.listing-card {
+  border:           none !important;
+  border-radius:    var(--radius-lg) !important;
+  overflow:         hidden;
+  margin-bottom:    var(--sp-6);
+  transition:       transform var(--transition), box-shadow var(--transition);
+  background:       transparent;
+}
+.listing-card:hover {
+  transform:    translateY(-4px);
+  box-shadow:   var(--shadow-lg);
+}
+
+.card-img-top {
+  border-radius: var(--radius-xl) !important;
+  width:         100% !important;
+  height:        20rem;
+  object-fit:    cover !important;
+  transition:    transform 0.35s ease;
+}
+.listing-link:hover .card-img-top { transform: scale(1.03); }
+
+.card-body {
+  padding: var(--sp-3) 0 0 !important;
+}
+
+.card-img-overlay {
+  border-radius:    var(--radius-xl);
+  opacity:          0;
+  background:       linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.15));
+  transition:       opacity var(--transition);
+}
+.listing-link:hover .card-img-overlay { opacity: 1; }
+
+/* ── 7. Buttons ───────────────────────────────────────────── */
+.add-btn,
+.edit-btn {
+  background-color: var(--clr-brand) !important;
+  color:            var(--clr-text-inverse) !important;
+  border:           none !important;
+  border-radius:    var(--radius-md) !important;
+  font-weight:      var(--fw-semi) !important;
+  transition:       background-color var(--transition), transform var(--transition) !important;
+}
+.add-btn:hover,
+.edit-btn:hover {
+  background-color: var(--clr-brand-dark) !important;
+  transform:        translateY(-1px);
+}
+
+/* ── 8. Show page ─────────────────────────────────────────── */
+.show-btn { min-height: 30vh; }
+
+/* ── 9. Booking widget ────────────────────────────────────── */
+#booking-widget .flatpickr-input { background: var(--clr-bg); }
+
+/* ── 10. Footer ───────────────────────────────────────────── */
+.f-info {
+  text-align:      center;
+  background:      var(--clr-bg-subtle);
+  border-top:      1px solid var(--clr-border);
+  padding:         var(--sp-5) var(--sp-4);
+  display:         flex;
+  flex-wrap:       wrap;
+  justify-content: center;
+  align-items:     center;
+  gap:             var(--sp-3);
+}
+.f-info-links, .f-info-socials, .f-info-brand {
+  width:           100%;
+  display:         flex;
+  justify-content: center;
+  align-items:     center;
+  gap:             var(--sp-4);
+}
+.f-info-links a {
+  text-decoration: none;
+  color:           var(--clr-text-muted);
+  font-size:       var(--text-sm);
+  transition:      color var(--transition);
+}
+.f-info-links a:hover { color: var(--clr-text); }
+.f-info-socials i {
+  font-size:  1.2rem;
+  color:      var(--clr-text-muted);
+  transition: color var(--transition);
+}
+.f-info-socials i:hover { color: var(--clr-brand); }
+
+/* ── 11. Tables (dashboard) ───────────────────────────────── */
+.table thead th {
+  font-size:      var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color:          var(--clr-text-muted);
+  font-weight:    var(--fw-semi);
+  border-bottom:  2px solid var(--clr-border);
+}
+.table td { vertical-align: middle; }
+
+/* ── 12. Flash messages ───────────────────────────────────── */
+.alert {
+  border-radius: var(--radius-md);
+  font-size:     var(--text-sm);
+  font-weight:   var(--fw-medium);
+}
+
+/* ── 13. Badges ───────────────────────────────────────────── */
+.badge {
+  font-weight:   var(--fw-semi);
+  font-size:     var(--text-xs);
+  border-radius: var(--radius-pill);
+}
+
+/* ── 14. Form controls global override ────────────────────── */
+.form-control, .form-select {
+  border-radius: var(--radius-md) !important;
+  border:        1.5px solid var(--clr-border) !important;
+  font-size:     var(--text-sm) !important;
+  transition:    border-color var(--transition) !important;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--clr-brand) !important;
+  box-shadow:   0 0 0 3px rgba(254,66,77,0.12) !important;
+}
+
+/* ── 15. Card override (Bootstrap reset) ──────────────────── */
+.card {
+  border:        1px solid var(--clr-border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow:    var(--shadow-sm);
+}

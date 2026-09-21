@@ -1,0 +1,61 @@
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: wanderlust-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: wanderlust-redis
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: wanderlust-api
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - MONGO_URL=mongodb://mongo:27017/wanderlust
+      - REDIS_URL=redis://redis:6379
+      - SESSION_SECRET=supersecret
+      - NUITEE_API_KEY=${NUITEE_API_KEY}
+      - NUITEE_API_URL=${NUITEE_API_URL:-https://api.liteapi.travel/v3.0}
+    depends_on:
+      - mongo
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker.Dockerfile
+    container_name: wanderlust-worker
+    environment:
+      - NODE_ENV=production
+      - MONGO_URL=mongodb://mongo:27017/wanderlust
+      - REDIS_URL=redis://redis:6379
+      - NUITEE_API_KEY=${NUITEE_API_KEY}
+      - NUITEE_API_URL=${NUITEE_API_URL:-https://api.liteapi.travel/v3.0}
+    depends_on:
+      - mongo
+      - redis
+
+  nginx:
+    image: nginx:alpine
+    container_name: wanderlust-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+
+volumes:
+  mongo_data:

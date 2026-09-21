@@ -1,4 +1,4 @@
-const Listing = require("./listing.model.js");
+const listingRepository = require("./listing.repository.js");
 const { LISTING_AMENITIES } = require("./listing.model.js");
 const cacheService = require("../../common/services/cache.service.js");
 const AppError = require("../../common/utils/AppError.js");
@@ -34,7 +34,6 @@ function buildRooms(rooms, fallback) {
     }];
 }
 
-// Derive listing-level price/maxGuests so cards/search stay consistent with rooms.
 function deriveListingLevel(rooms, basePrice, baseGuests) {
     const prices = rooms.map(r => r.price).filter(p => p > 0);
     const price = prices.length ? Math.min(basePrice, ...prices) : basePrice;
@@ -64,11 +63,7 @@ class ListingService {
 
         const priceSort = sort === "price_asc" ? { price: 1 } : (sort === "price_desc" ? { price: -1 } : null);
 
-        let cursor = Listing.find(filter).populate("reviews").lean();
-        if (priceSort) cursor = cursor.sort(priceSort);
-        if (limit && priceSort) cursor = cursor.limit(limit);
-
-        let listings = await cursor;
+        let listings = await listingRepository.find(filter, priceSort, limit);
 
         listings.forEach(decorateRating);
 
@@ -82,8 +77,7 @@ class ListingService {
     }
 
     async getFeaturedListings(limit = 8) {
-        const listings = await this.getListings({ sort: "rating", limit });
-        return listings;
+        return this.getListings({ sort: "rating", limit });
     }
 
     async getListingsByOwner(ownerId) {
@@ -91,7 +85,7 @@ class ListingService {
         const cached = await cacheService.get(cacheKey);
         if (cached) return cached;
 
-        const listings = await Listing.find({ owner: ownerId }).lean();
+        const listings = await listingRepository.findByOwner(ownerId);
         await cacheService.set(cacheKey, listings, 3600);
         return listings;
     }
@@ -101,9 +95,7 @@ class ListingService {
         const cached = await cacheService.get(cacheKey);
         if (cached && cached.price !== undefined) return cached;
 
-        const listing = await Listing.findById(id)
-            .populate({ path: "reviews", populate: { path: "author" } })
-            .populate("owner");
+        const listing = await listingRepository.findByIdPopulated(id);
         if (!listing) {
             throw new AppError(404, "Listing not found");
         }
@@ -133,22 +125,22 @@ class ListingService {
         cleanedData.rooms = rooms;
         cleanedData.price = price;
         cleanedData.maxGuests = maxGuests;
+        cleanedData.owner = ownerId;
 
-        let newListing = new Listing(cleanedData);
-        newListing.owner = ownerId;
         if (file) {
-            newListing.image = {
+            cleanedData.image = {
                 url: file.path,
                 filename: file.filename
             };
         }
-        await newListing.save();
+
+        const newListing = await listingRepository.create(cleanedData);
         await this.invalidateCache();
         return newListing;
     }
 
     async updateListing(id, listingData, file) {
-        let listing = await Listing.findById(id);
+        let listing = await listingRepository.findById(id);
         if (!listing) {
             throw new AppError(404, "Listing not found");
         }
@@ -182,7 +174,7 @@ class ListingService {
     }
 
     async deleteListing(id) {
-        const deleted = await Listing.findByIdAndDelete(id);
+        const deleted = await listingRepository.deleteById(id);
         if (!deleted) {
             throw new AppError(404, "Listing not found");
         }
@@ -191,7 +183,7 @@ class ListingService {
     }
 
     async addBlockedDates(id, dates) {
-        const listing = await Listing.findById(id);
+        const listing = await listingRepository.findById(id);
         if (!listing) {
             throw new AppError(404, "Listing not found");
         }
@@ -211,7 +203,7 @@ class ListingService {
 
     async removeBlockedDate(id, dateStr) {
         const target = new Date(dateStr).setHours(0, 0, 0, 0);
-        const listing = await Listing.findById(id);
+        const listing = await listingRepository.findById(id);
         if (!listing) {
             throw new AppError(404, "Listing not found");
         }

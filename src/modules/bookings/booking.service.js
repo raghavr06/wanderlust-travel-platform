@@ -1,39 +1,24 @@
 const mongoose = require("mongoose");
-const Booking = require("./booking.model.js");
-const Listing = require("../listings/listing.model.js");
+const bookingRepository = require("./booking.repository.js");
+const availabilityService = require("./availability.service.js");
+const bookingPolicy = require("./booking.policy.js");
+const listingRepository = require("../listings/listing.repository.js");
+const userRepository = require("../users/user.repository.js");
 const AppError = require("../../common/utils/AppError.js");
 const cacheService = require("../../common/services/cache.service.js");
+const queueService = require("../../common/services/queue.service.js");
 const notificationService = require("../notifications/notification.service.js");
+const nuiteeClient = require("../../infrastructure/nuitee/nuitee.client.js");
 
 const MAX_STAY_NIGHTS = 30;
-
-// Property rules: guests may check in from 12:00 PM on their check-in date and must
-// check out by 10:00 AM on their check-out date. This means a room that a guest
-// leaves at 10:00 AM is bookable again by the next guest at 12:00 PM the same day.
 const CHECK_IN_HOUR = 12;
 const CHECK_OUT_HOUR = 10;
-
-const VALID_TRANSITIONS = {
-    "PENDING": ["CANCELLED"], // legacy rows only
-    "CONFIRMED": ["CANCELLED"],
-    "CANCELLED": [],
-    "EXPIRED": [],
-    "COMPLETED": []
-};
-
-function yyyymmdd(date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-}
 
 function nightsBetween(checkIn, checkOut) {
     return Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
 }
 
 function defaultRoom(listing) {
-    // Stable pseudo-id (the listing itself acts as the only "room")
     return {
         _id: listing._id,
         name: "Standard Room",
@@ -51,13 +36,8 @@ function resolveRoom(listing, roomId) {
 
 class BookingService {
     async createBooking(listingId, guestId, checkInStr, checkOutStr, guests, roomId) {
-        const listing = await Listing.findById(listingId);
-        if (!listing) {
-            throw new AppError(404, "Listing not found");
-        }
-        if (listing.owner && String(listing.owner) === String(guestId)) {
-            throw new AppError(400, "You cannot book your own listing");
-        }
+        const listing = await listingRepository.findById(listingId);
+        bookingPolicy.canCreateBooking(listing, guestId);
 
         const checkIn = new Date(`${checkInStr}T${String(CHECK_IN_HOUR).padStart(2, "0")}:00:00`);
         const checkOut = new Date(`${checkOutStr}T${String(CHECK_OUT_HOUR).padStart(2, "0")}:00:00`);
@@ -88,39 +68,84 @@ class BookingService {
         const roomPrice = (room.price != null && room.price > 0) ? room.price : (listing.price || 0);
         const roomIdValue = room._id;
 
+        // Nuitee Live Booking Flow (3-Step API Execution)
+        let nuiteeOfferId = null;
+        let nuiteePrebookId = null;
+        let nuiteeBookingId = null;
+
+        if (listing.nuiteeHotelId) {
+            try {
+                // Step 1: Search Rates -> get offerId
+                const ratesRes = await nuiteeClient.searchRates({
+                    hotelId: listing.nuiteeHotelId,
+                    checkIn: checkInStr,
+                    checkOut: checkOutStr,
+                    adultCount: guests
+                });
+
+                const roomTypes = ratesRes?.data?.[0]?.roomTypes || [];
+                if (roomTypes.length > 0 && roomTypes[0].offerId) {
+                    nuiteeOfferId = roomTypes[0].offerId;
+
+                    // Step 2: Prebook -> get prebookId
+                    const prebookRes = await nuiteeClient.prebook({ offerId: nuiteeOfferId });
+                    nuiteePrebookId = prebookRes?.data?.prebookId || prebookRes?.prebookId;
+
+                    if (nuiteePrebookId) {
+                        // Step 3: Confirm Booking -> get confirmation
+                        const confirmRes = await nuiteeClient.confirmBooking({
+                            prebookId: nuiteePrebookId,
+                            holder: {
+                                firstName: "Guest",
+                                lastName: "User",
+                                email: "guest@wanderlust.dev",
+                                phone: "1234567890"
+                            },
+                            guests: [{
+                                occupancyNumber: 1,
+                                firstName: "Guest",
+                                lastName: "User",
+                                email: "guest@wanderlust.dev"
+                            }],
+                            payment: { method: "ACC_CREDIT_CARD" }
+                        });
+                        nuiteeBookingId = confirmRes?.data?.bookingId || confirmRes?.bookingId || "nuitee_confirmed";
+                    }
+                }
+            } catch (nuiteeErr) {
+                console.warn("[Nuitee Integration Warning] 3-step live booking encountered an issue, proceeding with internal reservation:", nuiteeErr.message);
+            }
+        }
+
         const maxRetries = 3;
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             const session = await mongoose.startSession();
             session.startTransaction();
 
             try {
-                // Re-fetch listing inside the transaction for a consistent lockVersion check
-                const txnListing = await Listing.findById(listingId).session(session);
+                const txnListing = await listingRepository.findByIdInTxn(listingId, session);
                 if (!txnListing) {
                     throw new AppError(404, "Listing not found");
                 }
 
-                // Check host-blocked dates (listing level)
-                const blocked = await this.getBlockedOverlapForRange(txnListing, checkIn, checkOut);
+                const blocked = availabilityService.getBlockedOverlapForRange(txnListing, checkIn, checkOut);
                 if (blocked) {
                     throw new AppError(409, "This listing is not available for the selected dates");
                 }
 
-                // 2. Check availability for the exact room (interval overlap)
-                const overlappingBookings = await Booking.find({
+                const overlappingBookings = await bookingRepository.findOverlapping(
                     listingId,
-                    roomId: roomIdValue,
-                    status: { $in: ["PENDING", "CONFIRMED"] },
-                    checkIn: { $lt: checkOut },
-                    checkOut: { $gt: checkIn }
-                }).session(session);
+                    roomIdValue,
+                    checkIn,
+                    checkOut,
+                    session
+                );
 
                 if (overlappingBookings.length > 0) {
                     throw new AppError(409, `"${room.name}" is already booked for part of those dates`);
                 }
 
-                // 3. Force Write Conflict by locking parent Listing Document
-                await Listing.updateOne(
+                await listingRepository.updateOne(
                     { _id: listingId },
                     { $inc: { lockVersion: 1 } },
                     { session }
@@ -128,7 +153,7 @@ class BookingService {
 
                 const totalPrice = nights * roomPrice;
 
-                const newBooking = new Booking({
+                const newBooking = await bookingRepository.createBookingDoc({
                     listingId,
                     guestId,
                     checkIn,
@@ -137,23 +162,21 @@ class BookingService {
                     roomId: roomIdValue,
                     roomName: room.name,
                     totalPrice,
-                    status: "CONFIRMED"
-                });
-
-                await newBooking.save({ session });
+                    status: "CONFIRMED",
+                    nuiteeOfferId,
+                    nuiteePrebookId,
+                    nuiteeBookingId
+                }, session);
 
                 await session.commitTransaction();
 
                 await cacheService.del(`listings:${listingId}`);
                 await cacheService.del("listings:all");
 
-                const { enqueueConfirmedBooking } = require('./booking.queue.js');
-                await enqueueConfirmedBooking(newBooking._id);
+                await queueService.enqueueConfirmedBooking(newBooking._id);
 
-                const User = require("../users/user.model.js");
-                const guest = await User.findById(guestId).select("username").lean();
+                const guest = await userRepository.findById(guestId, "username");
 
-                // Notify host of the new confirmed booking
                 await notificationService.create({
                     recipient: txnListing.owner,
                     type: "NEW_BOOKING",
@@ -162,7 +185,6 @@ class BookingService {
                     link: "/dashboard"
                 });
 
-                // Notify guest that it's instantly confirmed
                 await notificationService.create({
                     recipient: guestId,
                     type: "BOOKING_CONFIRMED",
@@ -198,24 +220,10 @@ class BookingService {
         session.startTransaction();
 
         try {
-            const booking = await Booking.findById(bookingId).session(session);
-            if (!booking) {
-                throw new AppError(404, "Booking not found");
-            }
-            const listing = await Listing.findById(booking.listingId).session(session);
+            const booking = await bookingRepository.findById(bookingId, session);
+            bookingPolicy.canUpdateStatus(booking, newStatus, actorId);
 
-            const currentStatus = booking.status;
-            if (!VALID_TRANSITIONS[currentStatus] || !VALID_TRANSITIONS[currentStatus].includes(newStatus)) {
-                throw new AppError(400, `Invalid state transition from ${currentStatus} to ${newStatus}`);
-            }
-
-            const isGuest = String(actorId) === String(booking.guestId);
-            if (!isGuest) {
-                throw new AppError(403, "You are not authorized to update this booking");
-            }
-            if (newStatus !== "CANCELLED") {
-                throw new AppError(403, "Guests can only cancel their own bookings");
-            }
+            const listing = await listingRepository.findByIdInTxn(booking.listingId, session);
 
             booking.status = newStatus;
             await booking.save({ session });
@@ -224,7 +232,6 @@ class BookingService {
 
             await cacheService.del(`listings:${booking.listingId}`);
 
-            // Notify the host about the cancellation
             if (listing?.owner) {
                 await notificationService.create({
                     recipient: listing.owner,
@@ -245,77 +252,26 @@ class BookingService {
     }
 
     async getBookedDates(listingId, roomId) {
-        const query = {
-            listingId,
-            status: { $in: ["PENDING", "CONFIRMED"] },
-            checkOut: { $gt: new Date() }
-        };
-        if (roomId) query.roomId = roomId;
-        return Booking.find(query).select("checkIn checkOut roomId roomName -_id");
+        return availabilityService.getBookedDates(listingId, roomId);
     }
 
     async getAvailability(listingId) {
-        const listing = await Listing.findById(listingId);
-        if (!listing) {
-            return { rooms: [], blockedDates: [] };
-        }
-        const rooms = (listing.rooms && listing.rooms.length) ? listing.rooms : [defaultRoom(listing)];
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const roomResults = [];
-        for (const room of rooms) {
-            const booked = await this.getBookedDates(listingId, room._id);
-            roomResults.push({
-                _id: room._id,
-                name: room.name,
-                maxGuests: room.maxGuests,
-                price: (room.price != null && room.price > 0) ? room.price : (listing?.price || 0),
-                disabled: booked.map(b => {
-                    // A booking owns the nights [checkIn .. checkOut - 1]. The checkout
-                    // day is free again from 10:00 AM, so it must NOT be greyed out.
-                    const lastOccupied = new Date(b.checkOut);
-                    lastOccupied.setDate(lastOccupied.getDate() - 1);
-                    return { from: yyyymmdd(new Date(b.checkIn)), to: yyyymmdd(lastOccupied) };
-                })
-            });
-        }
-
-        const blockedDates = (listing.blockedDates || [])
-            .filter(d => new Date(d) >= today)
-            .map(d => ({ from: yyyymmdd(new Date(d)), to: yyyymmdd(new Date(d)) }));
-
-        return { rooms: roomResults, blockedDates };
+        return availabilityService.getAvailability(listingId);
     }
 
     async getBlockedOverlapForRange(listing, checkIn, checkOut) {
-        return listing.blockedDates?.some(d => {
-            const date = new Date(d);
-            date.setHours(0, 0, 0, 0);
-            const ci = new Date(checkIn);
-            ci.setHours(0, 0, 0, 0);
-            const co = new Date(checkOut);
-            co.setHours(0, 0, 0, 0);
-            return date < co && date >= ci;
-        }) || false;
+        return availabilityService.getBlockedOverlapForRange(listing, checkIn, checkOut);
     }
 
     async getBookingsByGuest(guestId) {
-        return Booking.find({ guestId })
-            .populate("listingId", "title image country location")
-            .sort({ createdAt: -1 });
+        return bookingRepository.findByGuest(guestId);
     }
 
     async getBookingRequestsByHost(hostId, { status } = {}) {
-        const listings = await Listing.find({ owner: hostId }).select("_id");
+        const listings = await listingRepository.selectOwnerListings(hostId);
         const listingIds = listings.map(l => l._id);
         if (listingIds.length === 0) return { listings: [], requests: [] };
-        const query = { listingId: { $in: listingIds } };
-        if (status) query.status = status;
-        const requests = await Booking.find(query)
-            .populate("guestId", "username")
-            .populate("listingId", "title image")
-            .sort({ createdAt: -1 });
+        const requests = await bookingRepository.findByListings(listingIds, status);
         return { listings, requests };
     }
 }

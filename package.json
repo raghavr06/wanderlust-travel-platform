@@ -4,6 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node src/server.js",
+    "start:worker": "node worker/src/worker.js",
+    "dev": "node src/server.js",
+    "dev:worker": "node worker/src/worker.js",
+    "db:seed": "node init/index.js",
+    "db:sync-nuitee": "node init/sync-nuitee.js",
     "test": "jest"
   },
   "keywords": [],

@@ -43,6 +43,18 @@ const bookingSchema = new Schema({
         enum: ["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED", "EXPIRED"],
         default: "CONFIRMED",
         required: true
+    },
+    nuiteeOfferId: {
+        type: String,
+        default: null
+    },
+    nuiteePrebookId: {
+        type: String,
+        default: null
+    },
+    nuiteeBookingId: {
+        type: String,
+        default: null
     }
 }, { timestamps: true });
 

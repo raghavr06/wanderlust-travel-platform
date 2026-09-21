@@ -1,10 +1,10 @@
-const Notification = require("./notification.model.js");
+const notificationRepository = require("./notification.repository.js");
 
 class NotificationService {
     async create({ recipient, type, title, message, link }) {
         if (!recipient) return null;
         try {
-            return await Notification.create({ recipient, type, title, message, link });
+            return await notificationRepository.create({ recipient, type, title, message, link });
         } catch (err) {
             console.error("Failed to create notification:", err);
             return null;
@@ -12,28 +12,19 @@ class NotificationService {
     }
 
     async listForUser(userId, { limit = 50, unreadOnly = false } = {}) {
-        const query = { recipient: userId };
-        if (unreadOnly) query.read = false;
-        return Notification.find(query)
-            .sort({ createdAt: -1 })
-            .limit(limit)
-            .lean();
+        return notificationRepository.listForUser(userId, limit, unreadOnly);
     }
 
     async unreadCount(userId) {
-        if (!userId) return 0;
-        return Notification.countDocuments({ recipient: userId, read: false });
+        return notificationRepository.unreadCount(userId);
     }
 
     async markAllRead(userId) {
-        await Notification.updateMany({ recipient: userId, read: false }, { $set: { read: true } });
+        return notificationRepository.markAllRead(userId);
     }
 
     async markRead(userId, notificationId) {
-        await Notification.updateOne(
-            { _id: notificationId, recipient: userId },
-            { $set: { read: true } }
-        );
+        return notificationRepository.markRead(userId, notificationId);
     }
 }
 
