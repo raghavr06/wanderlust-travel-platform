@@ -1,5 +1,5 @@
-jest.mock('../src/common/middlewares/auth.middleware.js', () => {
-    const actual = jest.requireActual('../src/common/middlewares/auth.middleware.js');
+jest.mock('../../src/common/middlewares/auth.middleware.js', () => {
+    const actual = jest.requireActual('../../src/common/middlewares/auth.middleware.js');
     return {
         ...actual,
         isLoggedIn: (req, res, next) => {
@@ -50,10 +50,10 @@ jest.mock('bullmq', () => {
     };
 });
 
-const app = require('../app');
-const bookingService = require('../src/modules/bookings/booking.service.js');
+const app = require('../../app');
+const bookingService = require('../../src/modules/bookings/booking.service.js');
 
-jest.mock('../src/modules/bookings/booking.service.js');
+jest.mock('../../src/modules/bookings/booking.service.js');
 
 describe('Booking Concurrency Integration Test', () => {
     afterEach(() => {
@@ -67,8 +67,6 @@ describe('Booking Concurrency Integration Test', () => {
             guests: 2
         };
 
-        // Simulate concurrency: first call succeeds, second call fails with a conflict
-        // (mirroring the lockVersion / WriteConflict behavior in the real service).
         let callCount = 0;
         let successCount = 0;
         let failureCount = 0;
@@ -79,7 +77,7 @@ describe('Booking Concurrency Integration Test', () => {
                 successCount++;
                 return { _id: 'booking_id' };
             } else {
-                const AppError = require('../src/common/utils/AppError.js');
+                const AppError = require('../../src/common/utils/AppError.js');
                 failureCount++;
                 throw new AppError(409, "This listing is not available for the selected dates");
             }
@@ -92,13 +90,10 @@ describe('Booking Concurrency Integration Test', () => {
 
         const statuses = [resA.statusCode, resB.statusCode];
 
-        // Exactly one booking is created; the conflicting request is caught by the
-        // controller and redirected back with a flash error (302), never a crash.
         expect(successCount).toBe(1);
         expect(failureCount).toBe(1);
         expect(statuses).toEqual([302, 302]);
 
-        // Verify the service was called exactly twice concurrently
         expect(bookingService.createBooking).toHaveBeenCalledTimes(2);
     });
 });

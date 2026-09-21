@@ -1,10 +1,8 @@
-const Redis = require('ioredis');
+const { ioRedisClient } = require('../../infrastructure/redis/redis');
 
 class CacheService {
     constructor() {
-        // If testing or redis not available, we could handle gracefully, but assuming it's available.
-        this.redis = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379');
-        this.redis.on('error', (err) => console.error('Redis Client Error', err));
+        this.redis = ioRedisClient;
     }
 
     async get(key) {

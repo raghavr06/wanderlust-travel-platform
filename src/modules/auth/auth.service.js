@@ -1,10 +1,8 @@
-const User = require("../users/user.model.js");
+const authRepository = require("./auth.repository.js");
 
 class AuthService {
     async registerUser(userData, password) {
-        let { username, email } = userData;
-        const newUser = new User({ email, username });
-        return await User.register(newUser, password);
+        return authRepository.registerUser(userData, password);
     }
 }
 

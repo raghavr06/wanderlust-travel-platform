@@ -83,6 +83,10 @@ const listingSchema=new Schema({
         type: Number,
         default: 0
     },
+    nuiteeHotelId: {
+        type: String,
+        default: null
+    },
     reviews:[{
         type:Schema.Types.ObjectId,
         ref:"Review"
@@ -96,6 +100,7 @@ const listingSchema=new Schema({
 listingSchema.index({ category: 1 });
 listingSchema.index({ country: 1 });
 listingSchema.index({ price: 1 });
+listingSchema.index({ nuiteeHotelId: 1 });
 
 listingSchema.post("findOneAndDelete",async(listing)=>{
     if(listing){
